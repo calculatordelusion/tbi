@@ -3,6 +3,11 @@ const nextConfig = {
   experimental: {
     esmExternals: 'loose'
   },
+  // Disable static generation for pages that use client-side features
+  trailingSlash: false,
+  generateBuildId: async () => {
+    return 'build-' + Date.now();
+  },
   images: {
     remotePatterns: [
       {

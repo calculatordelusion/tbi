@@ -11,71 +11,93 @@ import { CardBody, CardContainer, CardItem } from '@/components/ui/3d-card';
 import BeforeAfterSlider from '@/components/ui/before-after-slider';
 import Link from 'next/link';
 import { FiArrowRight, FiStar, FiUsers, FiZap, FiHeart, FiAward, FiTrendingUp, FiSun, FiMoon, FiMonitor } from 'react-icons/fi';
+import { useClientSide, useSafeWindow, useSafeDocument } from '@/hooks/useClientSide';
 
 const Page = () => {
     const [isLoaded, setIsLoaded] = useState(false);
     const [theme, setTheme] = useState('system');
     const [showScrollTop, setShowScrollTop] = useState(false);
+    const isClient = useClientSide();
+    const windowObj = useSafeWindow();
+    const documentObj = useSafeDocument();
 
     useEffect(() => {
+        if (!isClient) return;
         setIsLoaded(true);
         
+        if (!windowObj || !documentObj) return;
+        
         // Initialize theme based on system preference
-        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        document.documentElement.classList.add(systemTheme);
+        const systemTheme = windowObj.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        documentObj.documentElement.classList.add(systemTheme);
         
         // Listen for system theme changes
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const mediaQuery = windowObj.matchMedia('(prefers-color-scheme: dark)');
         const handleSystemThemeChange = (e: MediaQueryListEvent) => {
             if (theme === 'system') {
                 const newSystemTheme = e.matches ? 'dark' : 'light';
-                document.documentElement.classList.remove('dark', 'light');
-                document.documentElement.classList.add(newSystemTheme);
+                documentObj.documentElement.classList.remove('dark', 'light');
+                documentObj.documentElement.classList.add(newSystemTheme);
             }
         };
         
         mediaQuery.addEventListener('change', handleSystemThemeChange);
         return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
-    }, [theme]);
+    }, [theme, isClient, windowObj, documentObj]);
 
     useEffect(() => {
+        if (!isClient || !windowObj) return;
+        
         const handleScroll = () => {
-            setShowScrollTop(window.scrollY > 300);
+            setShowScrollTop(windowObj.scrollY > 300);
         };
 
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+        windowObj.addEventListener('scroll', handleScroll);
+        return () => windowObj.removeEventListener('scroll', handleScroll);
+    }, [isClient, windowObj]);
 
     const scrollToTop = () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (windowObj) {
+            windowObj.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     };
 
     const toggleTheme = (newTheme: string) => {
         setTheme(newTheme);
         
+        if (!isClient || !documentObj || !windowObj) return;
+        
         // Remove existing theme classes
-        document.documentElement.classList.remove('dark', 'light');
+        documentObj.documentElement.classList.remove('dark', 'light');
         
         if (newTheme === 'dark') {
-            document.documentElement.classList.add('dark');
+            documentObj.documentElement.classList.add('dark');
         } else if (newTheme === 'light') {
-            document.documentElement.classList.add('light');
+            documentObj.documentElement.classList.add('light');
         } else {
             // System theme
-            const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            document.documentElement.classList.add(systemTheme);
+            const systemTheme = windowObj.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            documentObj.documentElement.classList.add(systemTheme);
         }
     };
 
     const getCurrentTheme = () => {
-        if (theme === 'system') {
-            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        if (isClient && windowObj && theme === 'system') {
+            return windowObj.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
         return theme;
     };
 
     const currentTheme = getCurrentTheme();
+
+    // Don't render until client-side
+    if (!isClient) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
 
     const features = [
         {
@@ -104,6 +126,15 @@ const Page = () => {
         }
     ];
 
+    // Don't render until client-side
+    if (!isClient) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
+
     return ( 
         <div className={`relative min-h-screen overflow-hidden transition-colors duration-300 ${currentTheme === 'dark' ? 'bg-black' : 'bg-gray-50'}`}>
             {/* Simple Background */}
@@ -129,8 +160,6 @@ const Page = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
-
-
 
             {/* Header */}
             <header className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b transition-colors duration-300 ${currentTheme === 'dark' ? 'bg-black/20 border-white/10 shadow-2xl shadow-black/50' : 'bg-white/90 border-gray-200 shadow-lg'}`}>
@@ -192,7 +221,7 @@ const Page = () => {
                                 >
                                     Get Started For Free
                                 </motion.button>
-            </Link>
+                            </Link>
                         </motion.div>
                     </div>
                 </div>
@@ -329,8 +358,8 @@ const Page = () => {
                             </a>
                         ))}
                     </motion.div>
-            </div>
-            
+                </div>
+                
                 {/* Simple Scroll Indicator */}
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -531,9 +560,9 @@ const Page = () => {
                 </motion.div>
 
                 <div className="w-full h-full">
-                <HeroImages />
-                <HeroParallaxImages />
-            </div>
+                    <HeroImages />
+                    <HeroParallaxImages />
+                </div>
             </section>
 
             {/* FAQ Section */}
@@ -622,8 +651,6 @@ const Page = () => {
                 </div>
             </section>
 
-
-
             {/* Footer */}
             <footer className="relative py-6 sm:py-8 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-900 via-black to-gray-900 border-t border-white/10">
                 <div className="max-w-6xl mx-auto">
@@ -692,8 +719,8 @@ const Page = () => {
                                 <Link href="/terms-of-service" className="text-gray-400 hover:text-white transition-colors duration-300 text-xs sm:text-sm">
                                     Terms of Service
                                 </Link>
-                </div> 
-            </div>
+                            </div> 
+                        </div>
                     </motion.div>
                 </div>
             </footer>

@@ -4,68 +4,89 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { FiArrowLeft, FiFileText, FiShield, FiAlertTriangle, FiCheckCircle, FiArrowUp, FiSun, FiMoon, FiMonitor } from 'react-icons/fi';
+import { useClientSide, useSafeWindow, useSafeDocument } from '@/hooks/useClientSide';
 
 const TermsOfService = () => {
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [theme, setTheme] = useState('system');
+    const isClient = useClientSide();
+    const windowObj = useSafeWindow();
+    const documentObj = useSafeDocument();
 
     useEffect(() => {
+        if (!isClient || !windowObj || !documentObj) return;
+        
         // Initialize theme based on system preference
-        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        document.documentElement.classList.add(systemTheme);
+        const systemTheme = windowObj.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        documentObj.documentElement.classList.add(systemTheme);
         
         // Listen for system theme changes
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const mediaQuery = windowObj.matchMedia('(prefers-color-scheme: dark)');
         const handleSystemThemeChange = (e: MediaQueryListEvent) => {
             if (theme === 'system') {
                 const newSystemTheme = e.matches ? 'dark' : 'light';
-                document.documentElement.classList.remove('dark', 'light');
-                document.documentElement.classList.add(newSystemTheme);
+                documentObj.documentElement.classList.remove('dark', 'light');
+                documentObj.documentElement.classList.add(newSystemTheme);
             }
         };
         
         mediaQuery.addEventListener('change', handleSystemThemeChange);
         return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
-    }, [theme]);
+    }, [theme, isClient, windowObj, documentObj]);
 
     useEffect(() => {
+        if (!isClient || !windowObj) return;
+        
         const handleScroll = () => {
-            setShowScrollTop(window.scrollY > 300);
+            setShowScrollTop(windowObj.scrollY > 300);
         };
 
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+        windowObj.addEventListener('scroll', handleScroll);
+        return () => windowObj.removeEventListener('scroll', handleScroll);
+    }, [isClient, windowObj]);
 
     const scrollToTop = () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (windowObj) {
+            windowObj.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     };
 
     const toggleTheme = (newTheme: string) => {
         setTheme(newTheme);
         
+        if (!isClient || !documentObj || !windowObj) return;
+        
         // Remove existing theme classes
-        document.documentElement.classList.remove('dark', 'light');
+        documentObj.documentElement.classList.remove('dark', 'light');
         
         if (newTheme === 'dark') {
-            document.documentElement.classList.add('dark');
+            documentObj.documentElement.classList.add('dark');
         } else if (newTheme === 'light') {
-            document.documentElement.classList.add('light');
+            documentObj.documentElement.classList.add('light');
         } else {
             // System theme
-            const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            document.documentElement.classList.add(systemTheme);
+            const systemTheme = windowObj.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            documentObj.documentElement.classList.add(systemTheme);
         }
     };
 
     const getCurrentTheme = () => {
-        if (theme === 'system') {
-            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        if (isClient && windowObj && theme === 'system') {
+            return windowObj.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
         return theme;
     };
 
     const currentTheme = getCurrentTheme();
+
+    // Don't render until client-side
+    if (!isClient) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className={`min-h-screen transition-colors duration-300 ${currentTheme === 'dark' ? 'bg-gradient-to-br from-gray-900 via-black to-gray-900' : 'bg-gradient-to-br from-gray-50 via-white to-gray-100'}`}>
