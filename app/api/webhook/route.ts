@@ -1,18 +1,45 @@
 import type { Stripe } from "stripe";
 
 import { NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { stripe, isStripeAvailable } from "@/lib/stripe";
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '', 
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-)
+// Only create Supabase client if we have the required environment variables
+const createSupabaseClient = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !supabaseKey) {
+    return null;
+  }
+  
+  return createClient(supabaseUrl, supabaseKey);
+};
 
 export async function POST(req: Request) {
+  // Check if required services are available
+  if (!isStripeAvailable()) {
+    return NextResponse.json(
+      { message: "Stripe service not configured" },
+      { status: 503 },
+    );
+  }
+
+  const supabaseAdmin = createSupabaseClient();
+  if (!supabaseAdmin) {
+    return NextResponse.json(
+      { message: "Database service not configured" },
+      { status: 503 },
+    );
+  }
+
   let event: Stripe.Event;
 
   try {
+    if (!stripe) {
+      throw new Error("Stripe service not available");
+    }
+
     event = stripe.webhooks.constructEvent(
       await (await req.blob()).text(),
       req.headers.get("stripe-signature") as string,

@@ -1,7 +1,15 @@
-import { stripe } from "@/lib/stripe";
+import { stripe, isStripeAvailable } from "@/lib/stripe";
 
 export async function POST(req: Request, res: Response) {
     try {
+        // Check if Stripe is available
+        if (!isStripeAvailable()) {
+            return Response.json(
+                { error: "Stripe service not configured" }, 
+                { status: 503 }
+            );
+        }
+
         const body = await req.json();
         const { user_id, email, plan_name, plan_type } = body;
         
@@ -10,6 +18,13 @@ export async function POST(req: Request, res: Response) {
         const unitAmount = isAnnual ? 7 * 100 : 9 * 100; // $7 for annual, $9 for monthly
         const interval = isAnnual ? 'year' : 'month';
         
+        if (!stripe) {
+            return Response.json(
+                { error: "Stripe service not available" }, 
+                { status: 503 }
+            );
+        }
+
         let session = await stripe.checkout.sessions.create({
                 customer_email: email,
                 line_items: [ 

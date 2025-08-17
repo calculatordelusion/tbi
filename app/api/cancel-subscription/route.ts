@@ -1,17 +1,43 @@
-import { stripe } from "@/lib/stripe";
+import { stripe, isStripeAvailable } from "@/lib/stripe";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '', 
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+// Only create Supabase client if we have the required environment variables
+const createSupabaseClient = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !supabaseKey) {
+    return null;
+  }
+  
+  return createClient(supabaseUrl, supabaseKey);
+};
 
 export async function POST(req: Request) {
   try {
+    // Check if required services are available
+    if (!isStripeAvailable()) {
+      return NextResponse.json(
+        { error: "Stripe service not configured" }, 
+        { status: 503 }
+      );
+    }
+
+    const supabaseAdmin = createSupabaseClient();
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: "Database service not configured" }, 
+        { status: 503 }
+      );
+    }
+
     const { subscription_id } = await req.json();
+    
     // Cancel the subscription on Stripe
-    await stripe.subscriptions.cancel(subscription_id);
+    if (stripe) {
+      await stripe.subscriptions.cancel(subscription_id);
+    }
 
     // Update the Supabase row
     const { error } = await supabaseAdmin
