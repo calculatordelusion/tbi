@@ -1,5 +1,28 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    experimental: {
+        esmExternals: 'loose',
+    },
+    webpack: (config, { isServer }) => {
+        if (!isServer) {
+            config.resolve.fallback = {
+                ...config.resolve.fallback,
+                fs: false,
+                net: false,
+                tls: false,
+            };
+        }
+        
+        // Fix for import.meta issues
+        config.module.rules.push({
+            test: /\.m?js$/,
+            resolve: {
+                fullySpecified: false,
+            },
+        });
+        
+        return config;
+    },
     images: {
         remotePatterns: [
             {
