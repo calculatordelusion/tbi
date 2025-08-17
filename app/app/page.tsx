@@ -16,7 +16,7 @@ import { ModeToggle } from '@/components/mode-toggle';
 import TextCustomizer from '@/components/editor/text-customizer';
 
 import { PlusIcon, ReloadIcon, UploadIcon, DownloadIcon } from '@radix-ui/react-icons';
-import { removeBackground } from "@imgly/background-removal";
+// import { removeBackground } from "@imgly/background-removal";
 
 import '@/app/fonts.css';
 import AppAds from '@/components/editor/app-ads';
@@ -52,9 +52,11 @@ const Page = () => {
   const setupImage = async (imageUrl: string) => {
     try {
       setIsImageSetupDone(false);
-      const imageBlob = await removeBackground(imageUrl);
-      const url = URL.createObjectURL(imageBlob);
-      setRemovedBgImageUrl(url);
+      // Temporarily disabled background removal for build compatibility
+      // const imageBlob = await removeBackground(imageUrl);
+      // const url = URL.createObjectURL(imageBlob);
+      // setRemovedBgImageUrl(url);
+      setRemovedBgImageUrl(imageUrl); // Use original image for now
       setIsImageSetupDone(true);
     } catch (error) {
       console.error(error);
