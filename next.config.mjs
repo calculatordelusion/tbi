@@ -21,6 +21,35 @@ const nextConfig = {
             },
         });
         
+        // Additional fix for import.meta
+        config.resolve.alias = {
+            ...config.resolve.alias,
+            'import.meta': 'undefined',
+        };
+        
+        // Ignore problematic modules
+        config.externals = config.externals || [];
+        config.externals.push({
+            '@imgly/background-removal': 'commonjs @imgly/background-removal',
+        });
+        
+        // Custom plugin to replace import.meta
+        config.plugins.push({
+            name: 'replace-import-meta',
+            apply: (compiler) => {
+                compiler.hooks.compilation.tap('replace-import-meta', (compilation) => {
+                    compilation.hooks.optimizeChunkModules.tap('replace-import-meta', (chunks, modules) => {
+                        modules.forEach((module) => {
+                            if (module.resource && module.resource.includes('@imgly')) {
+                                // Skip problematic modules
+                                module.external = true;
+                            }
+                        });
+                    });
+                });
+            },
+        });
+        
         return config;
     },
     images: {
